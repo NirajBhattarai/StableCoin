@@ -3,6 +3,7 @@ pragma solidity ^0.8.20;
 
 import {DecentralizedStableCoin} from "./DecentralizedStableCoin.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/interfaces/IERC20Metadata.sol";
+import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 
 ///////////////////
 // Type Declarations
@@ -20,14 +21,21 @@ contract DSCEngine {
     ///////////////////
 
     error DSCEngine_TokenAddressesAndPriceFeedAddressesMustBeSameLength();
+    error DSCEngine_TokenNotAllowed(address token);
+    error DSCEngine_AmountMustBeMoreThanZero();
+    error DSCEngine_TransferFailed();
 
     ///////////////////
     // State Variables
     ///////////////////
 
-    mapping(address token => CollateralConfig collateralConfig) private s_collateralTokens;
+    mapping(address token => CollateralConfig collateralConfig) private s_collateralTokensConfigs;
 
     DecentralizedStableCoin private immutable i_dsc;
+
+    address[] private s_collateralTokens;
+
+    mapping(address user => mapping(address token => uint256 amount)) private s_userCollateralDeposited;
 
     ///////////////////
     // Events
@@ -41,6 +49,20 @@ contract DSCEngine {
     // Modifiers
     ///////////////////
 
+    modifier isAllowedToken(address token) {
+        if (s_collateralTokensConfigs[token].underlyingToken == address(0)) {
+            revert DSCEngine_TokenNotAllowed(token);
+        }
+        _;
+    }
+
+    modifier moreThanZero(uint256 amount) {
+        if (amount <= 0) {
+            revert DSCEngine_AmountMustBeMoreThanZero();
+        }
+        _;
+    }
+
     constructor(address[] memory collateralTokens, address[] memory priceFeedAddresses, address dscAddress) {
         if (collateralTokens.length != priceFeedAddresses.length) {
             revert DSCEngine_TokenAddressesAndPriceFeedAddressesMustBeSameLength();
@@ -50,11 +72,12 @@ contract DSCEngine {
             // Add to allowed tokens
             address token = collateralTokens[i];
             address priceFeed = priceFeedAddresses[i];
-            s_collateralTokens[token] = CollateralConfig({
+            s_collateralTokensConfigs[token] = CollateralConfig({
                 underlyingToken: token,
                 oracleAddress: priceFeed,
                 tokenDecimals: IERC20Metadata(token).decimals()
             });
+            s_collateralTokens.push(token);
         }
 
         i_dsc = DecentralizedStableCoin(dscAddress);
@@ -81,9 +104,20 @@ contract DSCEngine {
         // 2. Redeem the collateral
     }
 
-    function despositCollateral(address tokenCollateralAddress, uint256 collateralAmount) public {
+    function despositCollateral(address tokenCollateralAddress, uint256 collateralAmount)
+        public
+        isAllowedToken(tokenCollateralAddress)
+        moreThanZero(collateralAmount)
+    {
+        s_userCollateralDeposited[msg.sender][tokenCollateralAddress] += collateralAmount;
+
         // 1. Deposit the collateral
         // 2. Mint DSC
+        bool success = IERC20(tokenCollateralAddress).transferFrom(msg.sender, address(this), collateralAmount);
+        if (!success) {
+            revert DSCEngine_TransferFailed();
+        }
+        emit CollateralDeposited(msg.sender, tokenCollateralAddress, collateralAmount);
     }
 
     ///////////////////
