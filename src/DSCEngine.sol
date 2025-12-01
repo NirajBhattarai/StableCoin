@@ -110,9 +110,7 @@ contract DSCEngine {
         moreThanZero(collateralAmount)
     {
         s_userCollateralDeposited[msg.sender][tokenCollateralAddress] += collateralAmount;
-
-        // 1. Deposit the collateral
-        // 2. Mint DSC
+        // Transfer the collateral from the user to the engine
         bool success = IERC20(tokenCollateralAddress).transferFrom(msg.sender, address(this), collateralAmount);
         if (!success) {
             revert DSCEngine_TransferFailed();
@@ -172,4 +170,8 @@ contract DSCEngine {
     }
 
     function getAccountCollateralValue(address user) public view returns (uint256) {}
+
+    function getUserCollateralDeposited(address user, address token) public view returns (uint256) {
+        return s_userCollateralDeposited[user][token];
+    }
 }

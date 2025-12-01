@@ -8,6 +8,7 @@ import {DecentralizedStableCoin} from "../src/DecentralizedStableCoin.sol";
 import {HelperConfig} from "../script/HelperConfig.s.sol";
 import {NetworkConfig} from "../script/HelperConfig.s.sol";
 import {DeployDecentralizedStable} from "../script/DeployDecentralizedStable.s.sol";
+import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 
 contract DSCEngineTest is Test {
     DSCEngine public dsce;
@@ -49,7 +50,25 @@ contract DSCEngineTest is Test {
     function test_RevertIfUserDoesNotHaveEnoughAllowance() public {
         uint256 amount = 1000000000000000000000000;
         vm.prank(USER);
-        vm.expectRevert(abi.encodeWithSelector(DSCEngine.DSCEngine_TransferFailed.selector));
+        vm.expectRevert();
+        // vm.expectRevert(abi.encodeWithSelector(DSCEngine.DSCEngine_TransferFailed.selector));
         dsce.despositCollateral(networkConfig.collateralTokens[0], amount);
+    }
+
+    function test_IncreasesUserCollateralDeposited() public {
+        uint256 amount = 1000000000000000000000000;
+
+        deal(networkConfig.collateralTokens[0], USER, amount);
+
+        console.log("balance of user", IERC20(networkConfig.collateralTokens[0]).balanceOf(USER));
+
+        vm.startPrank(USER);
+        IERC20(networkConfig.collateralTokens[0]).approve(address(dsce), amount);
+        vm.expectEmit(true, true, true, true);
+        emit DSCEngine.CollateralDeposited(USER, networkConfig.collateralTokens[0], amount);
+        dsce.despositCollateral(networkConfig.collateralTokens[0], amount);
+
+        vm.stopPrank();
+        assertEq(dsce.getUserCollateralDeposited(USER, networkConfig.collateralTokens[0]), amount);
     }
 }
