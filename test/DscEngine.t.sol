@@ -56,7 +56,7 @@ contract DSCEngineTest is Test {
     }
 
     function test_IncreasesUserCollateralDeposited() public {
-        uint256 amount = 1000000000000000000000000;
+        uint256 amount = 100000000000000000000000;
 
         deal(networkConfig.collateralTokens[0], USER, amount);
 
@@ -70,5 +70,21 @@ contract DSCEngineTest is Test {
 
         vm.stopPrank();
         assertEq(dsce.getUserCollateralDeposited(USER, networkConfig.collateralTokens[0]), amount);
+    }
+
+    function test_GetAccountCollateralValue() public {
+        uint256 amount = 1e18;
+        deal(networkConfig.collateralTokens[0], USER, amount);
+        vm.startPrank(USER);
+        IERC20(networkConfig.collateralTokens[0]).approve(address(dsce), amount);
+        dsce.despositCollateral(networkConfig.collateralTokens[0], amount);
+        vm.stopPrank();
+
+        uint256 value = dsce.getAccountCollateralValue(USER);
+
+        console.log("---->value", value);
+
+        // uint256 expectedAccountCollateralValue = amount * networkConfig.priceFeeds[0] / 10 ** 18;
+        // assertEq(dsce.getAccountCollateralValue(USER), expectedAccountCollateralValue);
     }
 }

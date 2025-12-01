@@ -34,7 +34,7 @@ contract HelperConfig is Script {
 
         // BTC
         collateralTokens[1] = address(0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599);
-        priceFeeds[1] = address(0x7678D4601798101b241841645F2113543856a521);
+        priceFeeds[1] = address(0xF4030086522a5bEEa4988F8cA5B36dbC97BeE88c);
 
         return NetworkConfig({collateralTokens: collateralTokens, priceFeeds: priceFeeds});
     }
