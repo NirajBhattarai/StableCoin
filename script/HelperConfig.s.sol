@@ -3,6 +3,8 @@ pragma solidity ^0.8.20;
 
 import {Script} from "forge-std/Script.sol";
 import {console} from "forge-std/console.sol";
+import {ERC20Mock} from "../test/mock/ERC20Mock.sol";
+import {MockV3Aggregator} from "../test/mock/MockV3Aggregator.sol";
 
 struct NetworkConfig {
     address[] collateralTokens;
@@ -56,10 +58,10 @@ contract HelperConfig is Script {
         // For local testing, we'll use mock addresses
         // In a real scenario, you would deploy mock ERC20 tokens and mock price feeds
         vm.startBroadcast();
-        address wethMock = address(0x1234567890123456789012345678901234567890);
-        address daiMock = address(0x2345678901234567890123456789012345678901);
-        address wethPriceFeedMock = address(0x3456789012345678901234567890123456789012);
-        address daiPriceFeedMock = address(0x4567890123456789012345678901234567890123);
+        address wethMock = address(new ERC20Mock("WETH", "WETH", address(this), 1000000000000000000000000));
+        address wbtcMock = address(new ERC20Mock("WBTC", "WBTC", address(this), 1000000000000000000000000));
+        address wethPriceFeedMock = address(new MockV3Aggregator(8, 2000_00000000));
+        address wbtcPriceFeedMock = address(new MockV3Aggregator(8, 1000_00000000));
         vm.stopBroadcast();
 
         address[] memory collateralTokens = new address[](2);
@@ -68,8 +70,8 @@ contract HelperConfig is Script {
         collateralTokens[0] = wethMock;
         priceFeeds[0] = wethPriceFeedMock;
 
-        collateralTokens[1] = daiMock;
-        priceFeeds[1] = daiPriceFeedMock;
+        collateralTokens[1] = wbtcMock;
+        priceFeeds[1] = wbtcPriceFeedMock;
 
         return NetworkConfig({collateralTokens: collateralTokens, priceFeeds: priceFeeds});
     }

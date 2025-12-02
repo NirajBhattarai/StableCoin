@@ -3,11 +3,11 @@ pragma solidity ^0.8.20;
 
 import {Test} from "forge-std/Test.sol";
 import {console} from "forge-std/console.sol";
-import {DSCEngine} from "../src/DSCEngine.sol";
-import {DecentralizedStableCoin} from "../src/DecentralizedStableCoin.sol";
-import {HelperConfig} from "../script/HelperConfig.s.sol";
-import {NetworkConfig} from "../script/HelperConfig.s.sol";
-import {DeployDecentralizedStable} from "../script/DeployDecentralizedStable.s.sol";
+import {DSCEngine} from "../../src/DSCEngine.sol";
+import {DecentralizedStableCoin} from "../../src/DecentralizedStableCoin.sol";
+import {HelperConfig} from "../../script/HelperConfig.s.sol";
+import {NetworkConfig} from "../../script/HelperConfig.s.sol";
+import {DeployDecentralizedStable} from "../../script/DeployDecentralizedStable.s.sol";
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 
 contract DSCEngineTest is Test {
@@ -72,8 +72,14 @@ contract DSCEngineTest is Test {
         assertEq(dsce.getUserCollateralDeposited(USER, networkConfig.collateralTokens[0]), amount);
     }
 
+    function test_GetUsdValue() public view {
+        uint256 amount = 2e18;
+        uint256 usdValue = dsce.getUsdValue(networkConfig.collateralTokens[0], amount);
+        assertEq(usdValue, 4000 * 10 ** 18);
+    }
+
     function test_GetAccountCollateralValue() public {
-        uint256 amount = 1e18;
+        uint256 amount = 2e18;
         deal(networkConfig.collateralTokens[0], USER, amount);
         vm.startPrank(USER);
         IERC20(networkConfig.collateralTokens[0]).approve(address(dsce), amount);
@@ -81,10 +87,6 @@ contract DSCEngineTest is Test {
         vm.stopPrank();
 
         uint256 value = dsce.getAccountCollateralValue(USER);
-
-        console.log("---->value", value);
-
-        // uint256 expectedAccountCollateralValue = amount * networkConfig.priceFeeds[0] / 10 ** 18;
-        // assertEq(dsce.getAccountCollateralValue(USER), expectedAccountCollateralValue);
+        assertEq(value, 4000 * 10 ** 18);
     }
 }

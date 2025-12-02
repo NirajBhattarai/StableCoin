@@ -209,15 +209,10 @@ contract DSCEngine {
 
     function getUsdValue(address token, uint256 amount) public view returns (uint256) {
         AggregatorV3Interface priceFeed = AggregatorV3Interface(s_collateralTokensConfigs[token].oracleAddress);
-        (
-            uint80 priceFeedRoundId,
-            int256 priceFeedAnswer,
-            uint256 priceFeedStartedAt,
-            uint256 priceFeedUpdatedAt,
-            uint80 priceFeedAnsweredInRound
-        ) = priceFeed.staleCheckLatestRoundData();
+        (, int256 priceFeedAnswer,,,) = priceFeed.staleCheckLatestRoundData();
+        uint8 decimals = priceFeed.decimals();
 
-        return ((uint256(priceFeedAnswer) * amount) * ADDITIONAL_FEED_PRECISION) / (PRECISION);
+        return (uint256(priceFeedAnswer) * amount) / (10 ** decimals);
     }
 
     function getAccountCollateralValue(address user) public view returns (uint256 totalCollateralValue) {
